@@ -10,6 +10,7 @@ const Body = z.object({
   topic: z.string().min(2).max(2000),
   niche: z.string().optional(),
   channelName: z.string().min(1),
+  transcript: z.string().max(20000).optional(),
 });
 
 export async function POST(req: NextRequest) {

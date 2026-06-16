@@ -16,6 +16,8 @@ export default function Page() {
   const [busy, setBusy] = useState<string | null>(null);
   const [log, setLog] = useState<string[]>([]);
   const [videoId, setVideoId] = useState<string | null>(null);
+  const [script, setScript] = useState<string>("");
+  const [scriptFile, setScriptFile] = useState<File | null>(null);
 
   useEffect(() => {
     fetch("/api/channels").then((r) => r.json()).then((d) => setChannels(d.channels));
@@ -26,17 +28,37 @@ export default function Page() {
   const channelObj = channels.find((c) => c.key === channel);
   const say = (s: string) => setLog((l) => [...l, `[${new Date().toLocaleTimeString()}] ${s}`]);
 
+  async function extractScript(file: File) {
+    setScriptFile(file);
+    setBusy("Extraindo texto do PDF...");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/extract-pdf", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setScript(d.text || "");
+      say(`Roteiro extraido: ${d.pages} pagina(s), ${d.chars} chars`);
+    } catch (e: any) { say("ERRO: " + e.message); setScript(""); }
+    finally { setBusy(null); }
+  }
+
   async function genMeta() {
-    if (!topic || !channelObj) return;
+    if ((!topic && !script) || !channelObj) return;
     setBusy("Gerando metadados...");
     try {
       const r = await fetch("/api/generate-metadata", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic, niche, channelName: channelObj.name }),
+        body: JSON.stringify({
+          topic: topic || "(veja roteiro anexado)",
+          niche,
+          channelName: channelObj.name,
+          transcript: script || undefined,
+        }),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error);
-      setMeta(d); say("Metadados gerados");
+      setMeta(d); say(script ? "Metadados gerados (com roteiro do PDF)" : "Metadados gerados");
     } catch (e: any) { say("ERRO: " + e.message); }
     finally { setBusy(null); }
   }
@@ -103,7 +125,10 @@ export default function Page() {
           <h1 className="text-3xl font-bold mb-1">Publicador YouTube</h1>
           <p className="text-neutral-400">Upload de video + IA pra thumb/titulo/descricao/tags + agendamento nos 3 canais</p>
         </div>
-        <a href="/tiktok" className="btn btn-ghost">TikTok →</a>
+        <div className="flex gap-2">
+          <a href="/historico" className="btn btn-ghost">Historico</a>
+          <a href="/tiktok" className="btn btn-ghost">TikTok →</a>
+        </div>
       </header>
 
       <section className="card mb-6">
@@ -129,19 +154,40 @@ export default function Page() {
       </section>
 
       <section className="card mb-6">
-        <label className="label">3. Assunto do video (para IA gerar metadados)</label>
+        <label className="label">3. Roteiro em PDF (opcional, base para a IA)</label>
+        <p className="text-xs text-neutral-500 mb-2">Anexa o PDF com o texto falado no video. A IA usa como fonte principal pra gerar titulo, descricao e tags.</p>
+        <input
+          type="file"
+          accept="application/pdf"
+          onChange={(e) => {
+            const f = e.target.files?.[0] || null;
+            if (f) extractScript(f); else { setScriptFile(null); setScript(""); }
+          }}
+          className="input"
+        />
+        {scriptFile && <div className="text-xs text-neutral-400 mt-2">{scriptFile.name} - {(scriptFile.size / 1024 / 1024).toFixed(2)} MB</div>}
+        {script && (
+          <details className="mt-3">
+            <summary className="text-xs text-emerald-400 cursor-pointer">Texto extraido ({script.length} chars) - clique para ver/editar</summary>
+            <textarea value={script} onChange={(e) => setScript(e.target.value)} rows={8} className="input mt-2 text-xs" />
+          </details>
+        )}
+      </section>
+
+      <section className="card mb-6">
+        <label className="label">4. Assunto / contexto extra (opcional se enviou PDF)</label>
         <textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={3}
           placeholder="Ex: video de motivacao matinal sobre disciplina e habitos de pessoas bem sucedidas"
           className="input mb-3" />
         <input value={niche} onChange={(e) => setNiche(e.target.value)}
           placeholder="Nicho/estilo (opcional): ex: motivacao raiz, viral curto, educativo profundo"
           className="input mb-3" />
-        <button onClick={genMeta} disabled={!topic || !!busy} className="btn btn-primary">Gerar metadados</button>
+        <button onClick={genMeta} disabled={(!topic && !script) || !!busy} className="btn btn-primary">Gerar metadados</button>
       </section>
 
       {meta && (
         <section className="card mb-6">
-          <label className="label">4. Metadados (edite se quiser)</label>
+          <label className="label">5. Metadados (edite se quiser)</label>
           <input value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} className="input mb-2" placeholder="Titulo" />
           <textarea value={meta.description} onChange={(e) => setMeta({ ...meta, description: e.target.value })} rows={6} className="input mb-2" placeholder="Descricao" />
           <input value={meta.tags.join(", ")} onChange={(e) => setMeta({ ...meta, tags: e.target.value.split(",").map((s) => s.trim()) })} className="input mb-3" placeholder="Tags separadas por virgula" />
@@ -151,7 +197,7 @@ export default function Page() {
 
       {thumb && (
         <section className="card mb-6">
-          <label className="label">5. Thumbnail</label>
+          <label className="label">6. Thumbnail</label>
           <img src={`data:image/png;base64,${thumb}`} alt="thumb" className="rounded-lg max-w-md mb-3" />
           <button onClick={genThumb} disabled={!!busy} className="btn btn-ghost mr-2">Regerar</button>
         </section>
@@ -159,7 +205,7 @@ export default function Page() {
 
       {meta && (
         <section className="card mb-6">
-          <label className="label">6. Agendamento</label>
+          <label className="label">7. Agendamento</label>
           <input type="datetime-local" value={publishAt} onChange={(e) => setPublishAt(e.target.value)} className="input mb-3 max-w-xs" />
           <button onClick={schedule} disabled={!video || !thumb || !publishAt || !!busy || !channelObj?.configured} className="btn btn-primary">
             Agendar publicacao

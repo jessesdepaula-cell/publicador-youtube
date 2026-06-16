@@ -40,6 +40,7 @@ export async function initResumableUpload(args: {
       privacyStatus: "private",
       publishAt: args.publishAt,
       selfDeclaredMadeForKids: false,
+      containsSyntheticMedia: true,
     },
   };
 

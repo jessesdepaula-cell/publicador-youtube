@@ -23,8 +23,12 @@ export async function generateMetadata(args: {
   topic: string;
   niche?: string;
   channelName: string;
+  transcript?: string;
 }): Promise<GeneratedMetadata> {
   const hint = NICHE_HINTS[args.niche || "default"] || args.niche || NICHE_HINTS.default;
+  const transcriptBlock = args.transcript
+    ? `\nTranscricao do audio do video (use como fonte principal para titulo/descricao/tags):\n"""${args.transcript.slice(0, 8000)}"""\n`
+    : "";
 
   const completion = await openai().chat.completions.create({
     model: "gpt-4o-mini",
@@ -40,7 +44,7 @@ export async function generateMetadata(args: {
         content: `Canal: ${args.channelName}
 Nicho/estilo: ${hint}
 Assunto do video: ${args.topic}
-
+${transcriptBlock}
 Gere:
 - title: maximo 70 caracteres, com gancho emocional ou curiosidade. SEM clickbait barato. Em PT-BR.
 - description: 3-5 paragrafos curtos. Primeira linha eh hook. Inclui 2-3 hashtags no final.
