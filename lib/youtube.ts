@@ -71,7 +71,7 @@ export async function setThumbnail(channel: ChannelKey, videoId: string, imageBu
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": mime },
-      body: imageBuffer,
+      body: new Uint8Array(imageBuffer),
     },
   );
   if (!res.ok) throw new Error(`Thumbnail set falhou: ${res.status} ${await res.text()}`);
