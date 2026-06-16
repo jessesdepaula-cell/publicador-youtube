@@ -38,6 +38,16 @@ npm run oauth -- 3   # canal 3
 
 O script salva sozinho no `.env.local` e detecta o nome do canal.
 
+## Cron para postar agendados (TikTok)
+
+Vercel Hobby permite cron **1x/dia** (vercel.json roda meio-dia UTC). Pra precisao de minutos:
+
+1. Cria conta gratis em https://cron-job.org
+2. Novo cronjob:
+   - URL: `https://publicador-youtube.vercel.app/api/cron/post-due`
+   - Schedule: a cada 5 minutos
+   - Headers: `Authorization: Bearer <CRON_SECRET>` (pega o valor em Vercel Settings > Env Vars)
+
 ## Deploy Vercel
 
 1. `vercel link` (ou conecta o repo GitHub na dashboard)
