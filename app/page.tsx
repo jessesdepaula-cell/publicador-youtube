@@ -98,9 +98,12 @@ export default function Page() {
 
   return (
     <main className="max-w-5xl mx-auto p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold mb-1">Publicador YouTube</h1>
-        <p className="text-neutral-400">Upload de video + IA pra thumb/titulo/descricao/tags + agendamento nos 3 canais</p>
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-1">Publicador YouTube</h1>
+          <p className="text-neutral-400">Upload de video + IA pra thumb/titulo/descricao/tags + agendamento nos 3 canais</p>
+        </div>
+        <a href="/tiktok" className="btn btn-ghost">TikTok →</a>
       </header>
 
       <section className="card mb-6">
