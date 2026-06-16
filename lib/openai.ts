@@ -1,6 +1,13 @@
 import OpenAI from "openai";
 
-export const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+let _client: OpenAI | null = null;
+function openai(): OpenAI {
+  if (_client) return _client;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY nao configurada");
+  _client = new OpenAI({ apiKey });
+  return _client;
+}
 
 export interface GeneratedMetadata {
   title: string;
@@ -19,7 +26,7 @@ export async function generateMetadata(args: {
 }): Promise<GeneratedMetadata> {
   const hint = NICHE_HINTS[args.niche || "default"] || args.niche || NICHE_HINTS.default;
 
-  const completion = await openai.chat.completions.create({
+  const completion = await openai().chat.completions.create({
     model: "gpt-4o-mini",
     response_format: { type: "json_object" },
     messages: [
@@ -60,7 +67,7 @@ export async function generateThumbnail(args: {
 }): Promise<Buffer> {
   const prompt = `YouTube thumbnail 1280x720, estilo cinematografico premium, alto contraste, foco no rosto/objeto principal, texto curto e legivel em portugues em destaque, paleta vibrante mas profissional. Tema: ${args.topic}. Headline visivel: "${args.title.slice(0, 40)}". SEM marcas, SEM logos do YouTube.`;
 
-  const res = await openai.images.generate({
+  const res = await openai().images.generate({
     model: "gpt-image-1",
     prompt,
     size: "1536x1024",

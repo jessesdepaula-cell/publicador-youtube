@@ -3,6 +3,7 @@ import { z } from "zod";
 import { generateThumbnail } from "@/lib/openai";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 const Body = z.object({
